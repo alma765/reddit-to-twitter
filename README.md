@@ -5,6 +5,7 @@ This script automatically fetches video posts from specified subreddits and repo
 ## Features
 
 - Fetch video posts from multiple subreddits
+- Include post text content in tweets (optional)
 - Support for Reddit-hosted videos, Gfycat, and Imgur
 - Post to multiple Twitter accounts
 - Configurable scheduling (hourly, daily, weekly)
@@ -90,6 +91,7 @@ Edit the `config.json` file to customize the script's behavior:
   ],
   "posts_per_subreddit": 10,
   "download_dir": "downloads",
+  "include_text_content": true,
   "schedule": {
     "interval": "daily",
     "time": "12:00",
@@ -104,6 +106,7 @@ Edit the `config.json` file to customize the script's behavior:
 - `twitter_accounts`: List of Twitter accounts to post to
 - `subreddits`: List of subreddits to fetch videos from
 - `posts_per_subreddit`: Number of posts to check per subreddit
+- `include_text_content`: Whether to include the post's text content in tweets (true/false)
 - `download_dir`: Directory to store downloaded videos
 - `schedule`: Scheduling configuration
   - `interval`: "hourly", "daily", or "weekly"

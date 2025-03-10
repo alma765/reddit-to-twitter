@@ -178,8 +178,21 @@ class RedditToTwitter:
             twitter_api = self.twitter_clients[account_name]["api"]
             twitter_client = self.twitter_clients[account_name]["client"]
             
-            # Create tweet text
-            tweet_text = f"{post.title}\n\nSource: https://reddit.com{post.permalink}"
+            # Create tweet text with post title
+            tweet_text = f"{post.title}"
+            
+            # Add post text content if available and enabled in config
+            include_text_content = self.config.get("include_text_content", False)
+            if include_text_content and hasattr(post, 'selftext') and post.selftext:
+                # Truncate selftext if it's too long
+                max_selftext_length = 150  # Reasonable length for tweet
+                selftext = post.selftext.strip()
+                if len(selftext) > max_selftext_length:
+                    selftext = selftext[:max_selftext_length] + "..."
+                
+                tweet_text += f"\n\n{selftext}"
+            
+            tweet_text += f"\n\nSource: https://reddit.com{post.permalink}"
             
             # Upload media
             media = twitter_api.media_upload(filename=str(video_path))

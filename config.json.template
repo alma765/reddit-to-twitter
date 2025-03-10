@@ -29,6 +29,7 @@
   ],
   "posts_per_subreddit": 10,
   "download_dir": "downloads",
+  "include_text_content": true,
   "schedule": {
     "interval": "daily",
     "time": "12:00",
