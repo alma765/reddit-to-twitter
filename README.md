@@ -1,21 +1,25 @@
-# Reddit to Twitter Video Reposter
+# Social Media to Twitter Video Reposter
 
-This script automatically fetches video posts from specified subreddits and reposts them to one or multiple Twitter accounts.
+This script automatically fetches video posts from specified subreddits and Telegram channels and reposts them to one or multiple Twitter accounts.
 
 ## Features
 
 - Fetch video posts from multiple subreddits
+- Fetch video messages from Telegram channels
 - Include post text content in tweets (optional)
 - Support for Reddit-hosted videos, Gfycat, and Imgur
 - Post to multiple Twitter accounts
 - Configurable scheduling (hourly, daily, weekly)
 - Keeps track of posted videos to avoid duplicates
+- OAuth setup helper for easy authentication with Reddit, Twitter, and Telegram
+- Web-based GUI for easy management
 - Detailed logging
 
 ## Prerequisites
 
 - Python 3.6+
 - Reddit API credentials
+- Telegram API credentials (optional, for Telegram functionality)
 - Twitter API credentials
 
 ## Installation
@@ -24,16 +28,30 @@ This script automatically fetches video posts from specified subreddits and repo
 2. Install the required dependencies:
 
 ```bash
-pip install praw tweepy requests schedule
+pip install praw tweepy requests schedule telethon
 ```
 
-3. Copy the configuration template and edit it with your credentials:
+3. Set up your API credentials using the OAuth helper:
+
+```bash
+python social_media_to_twitter.py --setup
+```
+
+This will guide you through the process of setting up API credentials for Reddit, Twitter, and Telegram using OAuth authentication in your web browser.
+
+## Manual Setup (Alternative)
+
+If you prefer to set up your API credentials manually, follow these steps:
+
+1. Copy the configuration template:
 
 ```bash
 cp config.json.template config.json
 ```
 
-## Setting up Reddit API Credentials
+2. Edit the config.json file with your credentials.
+
+### Setting up Reddit API Credentials
 
 1. Go to [Reddit's App Preferences](https://www.reddit.com/prefs/apps)
 2. Click "Create App" or "Create Another App" button
@@ -49,7 +67,22 @@ cp config.json.template config.json
    - Client Secret: The string next to "secret"
 6. Update the `config.json` file with these credentials
 
-## Setting up Twitter API Credentials
+### Setting up Telegram API Credentials
+
+1. Go to [Telegram's API Development Tools](https://my.telegram.org/apps)
+2. Log in with your phone number
+3. Fill in the form to create a new application:
+   - App title: RedditToTwitter (or any name you prefer)
+   - Short name: RedditToTwitter (or any name you prefer)
+   - Platform: Other
+   - Description: A bot that reposts Telegram videos to Twitter
+4. Click "Create application"
+5. Note down the following information:
+   - API ID: The numeric ID provided
+   - API Hash: The string provided
+6. Update the `config.json` file with these credentials
+
+### Setting up Twitter API Credentials
 
 1. Go to the [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
 2. Create a new project and app
@@ -75,6 +108,17 @@ Edit the `config.json` file to customize the script's behavior:
     "password": "YOUR_REDDIT_PASSWORD",
     "user_agent": "RedditToTwitter Bot v1.0"
   },
+  "telegram": {
+    "api_id": "YOUR_TELEGRAM_API_ID",
+    "api_hash": "YOUR_TELEGRAM_API_HASH",
+    "phone": "YOUR_PHONE_NUMBER",
+    "channels": [
+      {
+        "name": "channel1",
+        "username": "channel_username_or_id"
+      }
+    ]
+  },
   "twitter_accounts": [
     {
       "name": "account1",
@@ -90,6 +134,7 @@ Edit the `config.json` file to customize the script's behavior:
     "funny"
   ],
   "posts_per_subreddit": 10,
+  "messages_per_channel": 10,
   "download_dir": "downloads",
   "include_text_content": true,
   "schedule": {
@@ -103,9 +148,17 @@ Edit the `config.json` file to customize the script's behavior:
 ### Configuration Options
 
 - `reddit`: Reddit API credentials
+- `telegram`: Telegram API credentials and channel configuration (optional)
+  - `api_id`: Your Telegram API ID
+  - `api_hash`: Your Telegram API hash
+  - `phone`: Your phone number in international format (e.g., +12345678901)
+  - `channels`: List of Telegram channels to fetch videos from
+    - `name`: A name for the channel (for reference)
+    - `username`: The username or ID of the channel
 - `twitter_accounts`: List of Twitter accounts to post to
 - `subreddits`: List of subreddits to fetch videos from
 - `posts_per_subreddit`: Number of posts to check per subreddit
+- `messages_per_channel`: Number of messages to check per Telegram channel
 - `include_text_content`: Whether to include the post's text content in tweets (true/false)
 - `download_dir`: Directory to store downloaded videos
 - `schedule`: Scheduling configuration
@@ -115,20 +168,66 @@ Edit the `config.json` file to customize the script's behavior:
 
 ## Usage
 
+### Web GUI
+
+The easiest way to use the script is through the web-based GUI:
+
+```bash
+python gui.py
+```
+
+This will open a web browser with a user-friendly interface where you can:
+- Set up OAuth authentication for Reddit, Twitter, and Telegram
+- View and manage your configuration
+- Run the script once or as a scheduled service
+- Monitor logs in real-time
+
+### OAuth Setup
+
+To set up your API credentials using the OAuth helper:
+
+```bash
+python social_media_to_twitter.py --setup
+```
+
+This interactive tool will guide you through:
+1. Setting up Reddit OAuth
+2. Setting up Twitter OAuth
+3. Setting up Telegram Authentication
+4. Adding Telegram Channels
+5. Viewing your current configuration
+
 ### Run Once
 
 To run the script once and exit:
 
 ```bash
-python reddit_to_twitter.py --run-once
+python social_media_to_twitter.py --run-once
 ```
+
+### Telegram Authentication
+
+When using Telegram functionality for the first time, you'll need to authenticate:
+
+1. Run the script:
+```bash
+python social_media_to_twitter.py --run-once
+```
+
+2. The script will send an authentication code to your phone number
+3. Run the script again with the code:
+```bash
+python social_media_to_twitter.py --telegram-code YOUR_CODE
+```
+
+After successful authentication, the script will create a session file and you won't need to authenticate again.
 
 ### Run as a Scheduled Service
 
 To run the script as a scheduled service:
 
 ```bash
-python reddit_to_twitter.py
+python social_media_to_twitter.py
 ```
 
 The script will run according to the schedule specified in the configuration file.
@@ -138,7 +237,7 @@ The script will run according to the schedule specified in the configuration fil
 To use a custom configuration file:
 
 ```bash
-python reddit_to_twitter.py --config my_config.json
+python social_media_to_twitter.py --config my_config.json
 ```
 
 ## Setting Up as a System Service
@@ -148,20 +247,20 @@ python reddit_to_twitter.py --config my_config.json
 1. Create a systemd service file:
 
 ```bash
-sudo nano /etc/systemd/system/reddit-to-twitter.service
+sudo nano /etc/systemd/system/social-media-to-twitter.service
 ```
 
 2. Add the following content (adjust paths as needed):
 
 ```
 [Unit]
-Description=Reddit to Twitter Video Reposter
+Description=Social Media to Twitter Video Reposter
 After=network.target
 
 [Service]
 User=your_username
-WorkingDirectory=/path/to/reddit_to_twitter
-ExecStart=/usr/bin/python3 /path/to/reddit_to_twitter/reddit_to_twitter.py
+WorkingDirectory=/path/to/social_media_to_twitter
+ExecStart=/usr/bin/python3 /path/to/social_media_to_twitter/social_media_to_twitter.py
 Restart=on-failure
 
 [Install]
@@ -171,8 +270,8 @@ WantedBy=multi-user.target
 3. Enable and start the service:
 
 ```bash
-sudo systemctl enable reddit-to-twitter.service
-sudo systemctl start reddit-to-twitter.service
+sudo systemctl enable social-media-to-twitter.service
+sudo systemctl start social-media-to-twitter.service
 ```
 
 ### Windows (Task Scheduler)
@@ -182,8 +281,8 @@ sudo systemctl start reddit-to-twitter.service
 3. Set the trigger according to your schedule
 4. Set the action to start a program:
    - Program/script: `python`
-   - Arguments: `C:\path\to\reddit_to_twitter\reddit_to_twitter.py`
-   - Start in: `C:\path\to\reddit_to_twitter`
+   - Arguments: `C:\path\to\social_media_to_twitter\social_media_to_twitter.py`
+   - Start in: `C:\path\to\social_media_to_twitter`
 
 ## Troubleshooting
 
@@ -201,9 +300,13 @@ sudo systemctl start reddit-to-twitter.service
    - Error: "Failed to download video"
    - Solution: Check if the video URL is accessible and if the script has permission to write to the download directory
 
+4. **Telegram Authentication Issues**
+   - Error: "Phone number invalid" or "Code invalid"
+   - Solution: Make sure you're using the correct phone number format (with country code) and the correct authentication code
+
 ### Logs
 
-Check the `reddit_to_twitter.log` file for detailed information about the script's operation and any errors that occur.
+Check the `social_media_to_twitter.log` file for detailed information about the script's operation and any errors that occur.
 
 ## License
 

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Setup script for Reddit to Twitter Video Reposter
+# Setup script for Social Media to Twitter Video Reposter
 
-echo "Setting up Reddit to Twitter Video Reposter..."
+echo "Setting up Social Media to Twitter Video Reposter..."
 
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
@@ -41,7 +41,7 @@ if [ ! -f config.json ]; then
         echo "Error: Failed to create config.json."
         exit 1
     fi
-    echo "Please edit config.json with your Reddit and Twitter API credentials."
+    echo "Please edit config.json with your Reddit, Twitter, and Telegram API credentials."
 fi
 
 # Create downloads directory
@@ -52,7 +52,14 @@ echo ""
 echo "Setup completed successfully!"
 echo ""
 echo "Next steps:"
-echo "1. Edit config.json with your Reddit and Twitter API credentials"
-echo "2. Run the script with: python reddit_to_twitter.py"
+echo "1. Launch the GUI for easy management:"
+echo "   python gui.py"
+echo ""
+echo "2. Or set up your API credentials using the OAuth helper:"
+echo "   python social_media_to_twitter.py --setup"
+echo ""
+echo "3. Or manually edit config.json with your API credentials"
+echo ""
+echo "4. Run the script with: python social_media_to_twitter.py"
 echo ""
 echo "For more information, see README.md"

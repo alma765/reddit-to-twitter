@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Reddit to Twitter Video Reposter
+Social Media to Twitter Video Reposter
 
-This script automatically fetches video posts from specified subreddits and reposts them
-to one or multiple Twitter accounts.
+This script automatically fetches video posts from specified subreddits and Telegram channels
+and reposts them to one or multiple Twitter accounts.
 """
 
 import os
@@ -21,21 +21,22 @@ import asyncio
 from telethon import TelegramClient
 from telethon.tl.types import MessageMediaDocument, MessageMediaPhoto, MessageMediaWebPage
 from pathlib import Path
+import importlib.util
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("reddit_to_twitter.log"),
+        logging.FileHandler("social_media_to_twitter.log"),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
-class RedditToTwitter:
+class SocialMediaToTwitter:
     def __init__(self, config_path="config.json"):
-        """Initialize the Reddit to Twitter reposter with the given configuration."""
+        """Initialize the Social Media to Twitter reposter with the given configuration."""
         self.config_path = config_path
         self.config = self._load_config()
         self.reddit = self._init_reddit()
@@ -61,7 +62,7 @@ class RedditToTwitter:
             return praw.Reddit(
                 client_id=reddit_config.get("client_id"),
                 client_secret=reddit_config.get("client_secret"),
-                user_agent=reddit_config.get("user_agent", "RedditToTwitter Bot v1.0"),
+                user_agent=reddit_config.get("user_agent", "SocialMediaToTwitter Bot v1.0"),
                 username=reddit_config.get("username"),
                 password=reddit_config.get("password")
             )
@@ -79,7 +80,7 @@ class RedditToTwitter:
             
             # Create the client but don't connect yet (we'll do that asynchronously when needed)
             client = TelegramClient(
-                'reddit_to_twitter_session',
+                'social_media_to_twitter_session',
                 telegram_config.get("api_id"),
                 telegram_config.get("api_hash")
             )
@@ -446,7 +447,7 @@ class RedditToTwitter:
             await self.telegram.disconnect()
 
     def run(self):
-        """Run the Reddit to Twitter reposter."""
+        """Run the Social Media to Twitter reposter."""
         subreddits = self.config.get("subreddits", [])
         limit = self.config.get("posts_per_subreddit", 10)
         
@@ -475,15 +476,34 @@ def setup_scheduler(reposter, schedule_config):
     logger.info(f"Scheduler set up: {interval} at {time_str}")
 
 def main():
-    """Main function to run the Reddit to Twitter reposter."""
-    parser = argparse.ArgumentParser(description="Reddit to Twitter Video Reposter")
+    """Main function to run the Social Media to Twitter reposter."""
+    parser = argparse.ArgumentParser(description="Social Media to Twitter Video Reposter")
     parser.add_argument("--config", default="config.json", help="Path to configuration file")
     parser.add_argument("--run-once", action="store_true", help="Run once and exit")
     parser.add_argument("--telegram-code", help="Telegram authentication code")
+    parser.add_argument("--setup", action="store_true", help="Run the OAuth setup helper")
     args = parser.parse_args()
     
     try:
-        reposter = RedditToTwitter(config_path=args.config)
+        # Run OAuth setup if requested
+        if args.setup:
+            try:
+                # Check if oauth_helper.py exists
+                if not os.path.exists("oauth_helper.py"):
+                    logger.error("OAuth helper not found. Please make sure oauth_helper.py is in the current directory.")
+                    return 1
+                
+                # Import and run the OAuth helper
+                spec = importlib.util.spec_from_file_location("oauth_helper", "oauth_helper.py")
+                oauth_helper = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(oauth_helper)
+                oauth_helper.main_menu()
+                return 0
+            except Exception as e:
+                logger.error(f"Error running OAuth helper: {e}")
+                return 1
+        
+        reposter = SocialMediaToTwitter(config_path=args.config)
         
         # Handle Telegram authentication if code is provided
         if args.telegram_code and reposter.telegram:
