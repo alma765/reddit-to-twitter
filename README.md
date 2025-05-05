@@ -57,10 +57,10 @@ cp config.json.template config.json
 2. Click "Create App" or "Create Another App" button
 3. Fill in the following details:
    - Name: RedditToTwitter (or any name you prefer)
-   - App type: Select "script"
+   - App type: Select "web app"
    - Description: A bot that reposts Reddit videos to Twitter
    - About URL: (leave blank)
-   - Redirect URI: http://localhost:8080
+   - Redirect URI: http://localhost:8000/callback
 4. Click "Create app" button
 5. Note down the following information:
    - Client ID: The string under "personal use script"
@@ -93,7 +93,8 @@ cp config.json.template config.json
    - API Key Secret (Consumer Secret)
    - Access Token
    - Access Token Secret
-6. Update the `config.json` file with these credentials for each Twitter account
+6. In your app settings, set the callback URL to: http://localhost:8000/callback
+7. Update the `config.json` file with these credentials for each Twitter account
 
 ## Configuration
 

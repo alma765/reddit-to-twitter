@@ -264,16 +264,52 @@ class SocialMediaToTwitter:
             tweet_text += f"\n\nSource: https://reddit.com{post.permalink}"
             
             # Upload media
-            media = twitter_api.media_upload(filename=str(video_path))
+            try:
+                logger.info(f"Uploading media to Twitter for post {post.id}...")
+                media = twitter_api.media_upload(
+                    filename=str(video_path),
+                    media_category='tweet_video'
+                )
+                logger.info(f"Media uploaded successfully, media_id: {media.media_id}")
+                
+                # Wait for media processing
+                logger.info("Waiting for media processing...")
+                time.sleep(5)  # Wait for initial processing
+                
+                # Check media status
+                status = twitter_api.get_media_upload_status(media.media_id)
+                while status.processing_info and status.processing_info['state'] in ['pending', 'in_progress']:
+                    logger.info(f"Media still processing: {status.processing_info['state']}")
+                    time.sleep(5)
+                    status = twitter_api.get_media_upload_status(media.media_id)
+                
+                if status.processing_info and status.processing_info['state'] == 'failed':
+                    logger.error(f"Media processing failed: {status.processing_info.get('error', {}).get('message', 'Unknown error')}")
+                    return False
+                
+                logger.info("Media processing completed successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to upload media to Twitter: {e}")
+                return False
             
             # Post tweet with media
-            twitter_client.create_tweet(
-                text=tweet_text[:280],  # Twitter character limit
-                media_ids=[media.media_id]
-            )
-            
-            logger.info(f"Posted to Twitter account {account_name}: {post.id}")
-            return True
+            try:
+                logger.info(f"Creating tweet for post {post.id}...")
+                response = twitter_client.create_tweet(
+                    text=tweet_text[:280],  # Twitter character limit
+                    media_ids=[media.media_id]
+                )
+                if response and hasattr(response, 'data') and response.data:
+                    logger.info(f"Successfully posted to Twitter account {account_name}: {post.id}")
+                    logger.info(f"Tweet URL: https://twitter.com/user/status/{response.data['id']}")
+                    return True
+                else:
+                    logger.error(f"Tweet creation response missing data: {response}")
+                    return False
+            except Exception as e:
+                logger.error(f"Failed to create tweet: {e}")
+                return False
             
         except Exception as e:
             logger.error(f"Error posting to Twitter: {e}")
@@ -318,30 +354,55 @@ class SocialMediaToTwitter:
     def process_subreddit(self, subreddit_name, limit=10):
         """Process videos from a subreddit."""
         try:
+            logger.info(f"Starting to process subreddit: {subreddit_name}")
             subreddit = self.reddit.subreddit(subreddit_name)
             
             # Get posts from the subreddit
+            posts_processed = 0
+            videos_found = 0
+            videos_downloaded = 0
+            videos_posted = 0
+            
             for post in subreddit.hot(limit=limit):
+                posts_processed += 1
+                logger.info(f"Processing post {posts_processed}/{limit}: {post.id} - {post.title}")
+                
                 # Skip if already posted
                 if post.id in self.posted_videos:
+                    logger.info(f"Post {post.id} already posted, skipping")
                     continue
                 
-                # Skip if not a video
-                if not (hasattr(post, 'is_video') and post.is_video) and not any(
+                # Check if it's a video
+                is_video = (hasattr(post, 'is_video') and post.is_video) or any(
                     domain in post.url for domain in ['gfycat.com', 'imgur.com', 'v.redd.it']
-                ):
+                )
+                
+                if not is_video:
+                    logger.info(f"Post {post.id} is not a video, skipping")
                     continue
+                
+                videos_found += 1
+                logger.info(f"Found video post: {post.id} - {post.title}")
                 
                 # Download the video
                 video_path = self.download_video(post)
                 if not video_path:
+                    logger.error(f"Failed to download video for post {post.id}")
                     continue
+                
+                videos_downloaded += 1
+                logger.info(f"Successfully downloaded video for post {post.id}")
                 
                 # Post to each Twitter account
                 posted_accounts = []
                 for account_name in self.twitter_clients.keys():
+                    logger.info(f"Attempting to post to Twitter account: {account_name}")
                     if self.post_to_twitter(video_path, post, account_name):
                         posted_accounts.append(account_name)
+                        videos_posted += 1
+                        logger.info(f"Successfully posted to Twitter account {account_name}")
+                    else:
+                        logger.error(f"Failed to post to Twitter account {account_name}")
                 
                 # Mark as posted if posted to at least one account
                 if posted_accounts:
@@ -352,12 +413,22 @@ class SocialMediaToTwitter:
                         "posted_to": posted_accounts
                     }
                     self._save_posted_videos()
+                    logger.info(f"Marked post {post.id} as posted to accounts: {posted_accounts}")
+                else:
+                    logger.error(f"Post {post.id} was not posted to any Twitter accounts")
                 
                 # Respect rate limits
                 time.sleep(5)
+            
+            logger.info(f"Subreddit {subreddit_name} processing complete:")
+            logger.info(f"Posts processed: {posts_processed}")
+            logger.info(f"Videos found: {videos_found}")
+            logger.info(f"Videos downloaded: {videos_downloaded}")
+            logger.info(f"Videos posted: {videos_posted}")
                 
         except Exception as e:
             logger.error(f"Error processing subreddit {subreddit_name}: {e}")
+            logger.exception("Full traceback:")
 
     async def process_telegram_channel(self, channel_info, limit=10):
         """Process videos from a Telegram channel."""

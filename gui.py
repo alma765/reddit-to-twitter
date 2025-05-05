@@ -44,7 +44,7 @@ def load_config():
     """Load configuration from the config file."""
     try:
         if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, 'r') as f:
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
                 return json.load(f)
         else:
             # Create a new config file with empty sections
@@ -72,7 +72,7 @@ def load_config():
 def save_config(config):
     """Save configuration to the config file."""
     try:
-        with open(CONFIG_PATH, 'w') as f:
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2)
         logger.info(f"Configuration saved to {CONFIG_PATH}")
     except Exception as e:
@@ -155,12 +155,13 @@ def run_oauth_helper():
         is_running = False
         return False
 
-# Create HTML templates directory
-os.makedirs("templates", exist_ok=True)
-
-# Create HTML templates
-with open("templates/index.html", "w") as f:
-    f.write("""<!DOCTYPE html>
+def create_template():
+    """Create the template directory and files if they don't exist."""
+    os.makedirs("templates", exist_ok=True)
+    
+    # Create index.html
+    with open("templates/index.html", "w", encoding="utf-8") as f:
+        f.write("""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1281,12 +1282,15 @@ def remove_subreddit():
     return jsonify({'success': True})
 
 def main():
-    """Run the GUI."""
+    """Main function to start the GUI."""
+    # Create template directory and files
+    create_template()
+    
     # Open browser
     webbrowser.open(f'http://localhost:{PORT}')
     
-    # Run Flask app
-    app.run(host='localhost', port=PORT, debug=False)
+    # Start Flask app
+    app.run(host='0.0.0.0', port=PORT, debug=False)
 
 if __name__ == '__main__':
     main()
